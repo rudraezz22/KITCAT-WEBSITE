@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KitCat Bot | AI Companion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0f172a; }
+        .scrollbar-custom::-webkit-scrollbar { width: 4px; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.2); border-radius: 10px; }
+        .scanline {
+            width: 100%; height: 2px; background: rgba(34, 211, 238, 0.1);
+            position: absolute; top: 0; z-index: 5; animation: scan 6s linear infinite;
+        }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+        .user-msg {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+    </style>
+</head>
+<body class="text-slate-200 overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div class="flex h-screen">
+        <div class="w-16 border-r border-white/10 flex flex-col items-center py-6 gap-6 bg-black/20 backdrop-blur-md">
+            <div class="w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/50"><i data-lucide="sparkles" class="text-white w-5"></i></div>
+            <i data-lucide="brain" class="text-slate-500 hover:text-cyan-400 cursor-pointer"></i>
+            <i data-lucide="heart" class="text-slate-500 hover:text-pink-400 cursor-pointer"></i>
+        </div>
+
+        <div class="flex-1 flex flex-col p-6 max-w-3xl mx-auto">
+            <header class="mb-8">
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">KitCat Bot</h1>
+                <p class="text-cyan-400/50 text-sm">Online & Ready</p>
+            </header>
+
+            <div id="chat-container" class="flex-1 overflow-y-auto space-y-4 pr-4 mb-6 scrollbar-custom flex flex-col">
+                <div class="bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300">
+                    Hello! I'm KitCat. I'm so glad you're here tonight. How can I help?
+                </div>
+            </div>
+
+            <div class="relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-50 transition"></div>
+                <div class="relative flex items-center gap-3 bg-slate-900/80 border border-white/10 rounded-2xl p-4">
+                    <input type="text" id="user-input" placeholder="Say something..." class="flex-1 bg-transparent outline-none text-white placeholder-slate-500">
+                    <button onclick="sendMessage()" class="p-2 bg-cyan-500 rounded-xl hover:scale-105 active:scale-95 transition-all">
+                        <i data-lucide="send" class="text-white w-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden lg:flex flex-1 items-center justify-center p-12">
+            <div class="relative w-full aspect-square max-w-md border border-cyan-500/20 rounded-3xl bg-black/20 backdrop-blur-2xl flex items-center justify-center shadow-2xl overflow-hidden">
+                <div class="scanline"></div>
+                <img src="Kitcatimg.png" alt="KitCat Character" id="kitcat-img" class="relative z-10 max-h-[80%] object-contain drop-shadow-[0_0_30px_rgba(34,211,238,0.4)]">
+                <div class="absolute bottom-6 right-6 flex items-center gap-2 bg-slate-900/80 border border-cyan-500/30 px-3 py-1 rounded-full text-[10px] tracking-widest text-cyan-400 font-bold">
+                    <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></span> SYSTEM ACTIVE
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const input = document.getElementById('user-input');
+        const container = document.getElementById('chat-container');
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            // User UI
+            container.innerHTML += `<div class="user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium">${text}</div>`;
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+
+            try {
+                const res = await fetch('http://localhost:5000/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                
+                // Bot UI
+                container.innerHTML += `<div class="bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300">${data.response}</div>`;
+            } catch (e) {
+                container.innerHTML += `<div class="text-red-400 text-[10px] text-center uppercase tracking-widest">Connection Error: Run app.py</div>`;
+            }
+            container.scrollTop = container.scrollHeight;
+        }
+
+        input.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+    </script>
+</body>
+</html>
