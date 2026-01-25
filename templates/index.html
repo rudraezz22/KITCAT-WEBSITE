@@ -38,7 +38,7 @@
 
             <div id="chat-container" class="flex-1 overflow-y-auto space-y-4 pr-4 mb-6 scrollbar-custom flex flex-col">
                 <div class="bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300">
-                    Hello! I'm KitCat. I'm so glad you're here tonight. How can I help?
+                    Hello! I'm KitCat. I'm connected to the backend now. How can I help?
                 </div>
             </div>
 
@@ -56,7 +56,7 @@
         <div class="hidden lg:flex flex-1 items-center justify-center p-12">
             <div class="relative w-full aspect-square max-w-md border border-cyan-500/20 rounded-3xl bg-black/20 backdrop-blur-2xl flex items-center justify-center shadow-2xl overflow-hidden">
                 <div class="scanline"></div>
-                <img src="Kitcatimg.png" alt="KitCat Character" id="kitcat-img" class="relative z-10 max-h-[80%] object-contain drop-shadow-[0_0_30px_rgba(34,211,238,0.4)]">
+                <img src="{{ url_for('static', filename='Kitcatimg.png') }}" alt="KitCat Character" ...>
                 <div class="absolute bottom-6 right-6 flex items-center gap-2 bg-slate-900/80 border border-cyan-500/30 px-3 py-1 rounded-full text-[10px] tracking-widest text-cyan-400 font-bold">
                     <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></span> SYSTEM ACTIVE
                 </div>
@@ -73,24 +73,41 @@
             const text = input.value.trim();
             if (!text) return;
 
-            // User UI
+            console.log("Sending to server:", text);
+
+            // User Message UI
             container.innerHTML += `<div class="user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium">${text}</div>`;
             input.value = '';
             container.scrollTop = container.scrollHeight;
 
             try {
-                const res = await fetch('http://localhost:5000/chat', {
+                
+                // FIXED LOCAL FETCH
+                const res = await fetch('/api/chat', { 
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ message: text })
                 });
-                const data = await res.json();
-                
-                // Bot UI
+
+                if (!res.ok) throw new Error("Server responded with error");
+
+                // In your sendMessage function, inside the 'try' block:
+const data = await res.json();
+
+if (text.toLowerCase() === "secret of rudra") {
+    // Add a special effect like a slow fade or a glow
+    document.body.style.transition = "background 3s";
+    document.body.style.background = "#1a0b2e"; // Darker, more emotional purple
+}
+                console.log("Response from server:", data.response);
+
+                // Bot Message UI
                 container.innerHTML += `<div class="bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300">${data.response}</div>`;
             } catch (e) {
-                container.innerHTML += `<div class="text-red-400 text-[10px] text-center uppercase tracking-widest">Connection Error: Run app.py</div>`;
+                console.error("Fetch Error:", e);
+                container.innerHTML += `<div class="text-red-400 text-[10px] text-center uppercase tracking-widest">Connection lost... try again 💫</div>`;
             }
+
             container.scrollTop = container.scrollHeight;
         }
 
