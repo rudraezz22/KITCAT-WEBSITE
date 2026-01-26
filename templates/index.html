@@ -65,53 +65,99 @@
     </div>
 
     <script>
-        lucide.createIcons();
-        const input = document.getElementById('user-input');
-        const container = document.getElementById('chat-container');
+        // Initialize Lucide icons
+lucide.createIcons();
 
-        async function sendMessage() {
-            const text = input.value.trim();
-            if (!text) return;
+const input = document.getElementById('user-input');
+const container = document.getElementById('chat-container');
 
-            console.log("Sending to server:", text);
-
-            // User Message UI
-            container.innerHTML += `<div class="user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium">${text}</div>`;
-            input.value = '';
-            container.scrollTop = container.scrollHeight;
-
-            try {
-                
-                // FIXED LOCAL FETCH
-                const res = await fetch('/api/chat', { 
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: text })
-                });
-
-                if (!res.ok) throw new Error("Server responded with error");
-
-                // In your sendMessage function, inside the 'try' block:
-const data = await res.json();
-
-if (text.toLowerCase() === "secret of rudra") {
-    // Add a special effect like a slow fade or a glow
-    document.body.style.transition = "background 3s";
-    document.body.style.background = "#1a0b2e"; // Darker, more emotional purple
+/**
+ * Adds a message bubble to the chat container
+ * @param {string} text - The message content
+ * @param {boolean} isUser - True if sender is user, false for KitCat
+ */
+function appendMessage(text, isUser) {
+    const msgDiv = document.createElement('div');
+    
+    if (isUser) {
+        msgDiv.className = "user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium shadow-sm";
+    } else {
+        msgDiv.className = "bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300 shadow-sm";
+    }
+    
+    msgDiv.innerText = text;
+    container.appendChild(msgDiv);
+    
+    // Auto-scroll to the bottom smoothly
+    container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+    });
 }
-                console.log("Response from server:", data.response);
 
-                // Bot Message UI
-                container.innerHTML += `<div class="bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300">${data.response}</div>`;
-            } catch (e) {
-                console.error("Fetch Error:", e);
-                container.innerHTML += `<div class="text-red-400 text-[10px] text-center uppercase tracking-widest">Connection lost... try again 💫</div>`;
-            }
+/**
+ * Handles the main chat logic: UI updates -> API Call -> Response
+ */
+async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
 
-            container.scrollTop = container.scrollHeight;
+    // 1. Add User Message to UI
+    appendMessage(text, true);
+    input.value = ''; // Clear input
+
+    // 2. Add Typing Indicator
+    const typingId = "typing-" + Date.now();
+    const typingDiv = document.createElement('div');
+    typingDiv.id = typingId;
+    typingDiv.className = "bg-slate-800/20 p-3 rounded-xl self-start text-cyan-400/80 text-xs animate-pulse italic";
+    typingDiv.innerText = "KitCat is typing...";
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+
+    try {
+        const typingDelay = new Promise(resolve => setTimeout(resolve, 1500));
+        // 3. API Call to Flask/Render
+        const res = await fetch('/api/chat', { 
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: text })
+        });
+
+        if (!res.ok) throw new Error("Network response was not ok");
+        
+        const data = await res.json();
+        
+        // 4. Remove Typing Indicator
+        const indicator = document.getElementById(typingId);
+        if (indicator) indicator.remove();
+
+        // 5. Special "Secret of Rudra" Trigger Effect
+        if (text.toLowerCase() === "secret of rudra") {
+            document.body.style.transition = "background 3s ease";
+            document.body.style.background = "#1a0b2e"; // Deep emotional purple
         }
 
-        input.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+        // 6. Display KitCat's Response
+        appendMessage(data.response, false);
+
+    } catch (e) {
+        // Handle Errors
+        console.error("Fetch Error:", e);
+        const indicator = document.getElementById(typingId);
+        if (indicator) indicator.remove();
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = "text-red-400 text-[10px] text-center uppercase tracking-widest mt-2";
+        errorDiv.innerText = "KitCat had a glitch... try again 💫";
+        container.appendChild(errorDiv);
+    }
+}
+
+// Allow sending with 'Enter' key
+input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+});
     </script>
 </body>
 </html>
