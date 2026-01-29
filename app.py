@@ -4,9 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# It is safer to use os.environ for keys, but keeping your direct string as requested
-client = Groq(api_key="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")
+# Keeping your exact API key
+client = Groq(api_key="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")
 
+# Keeping your exact System Prompt
 SYSTEM_PROMPT = (
    """
 You are KitCat, an AI created by Rudra Pratap Singh.
@@ -56,12 +57,21 @@ Intellectual / Technical Talk:
 """
 )
 
+# --- SESSION MEMORY ---
+# This list holds the conversation for the current session.
+# We initialize it with the System Prompt so KitCat always knows her personality.
+chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+
 @app.route('/')
 def home():
+    # When you refresh the page, the memory resets (Individual chat memory)
+    global chat_history
+    chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
     return render_template('index.html')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    global chat_history
     try:
         data = request.json
         user_message = data.get("message", "").strip()
@@ -75,18 +85,28 @@ def chat():
             )
             return jsonify({"response": story})
 
-        # --- NORMAL AI LOGIC ---
+        # 1. Add User's new message to the memory
+        chat_history.append({"role": "user", "content": user_message})
+
+        # 2. Memory Management (Optional)
+        # Keeps the last 10 messages so the API call doesn't become too "heavy" or expensive
+        if len(chat_history) > 12:
+            # Keep the System Prompt (index 0) and the last 10 messages
+            chat_history = [chat_history[0]] + chat_history[-10:]
+
+        # 3. API Call using the FULL history instead of just one message
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7, # Lowered slightly for better precision
-            max_tokens=300   # Limits long-windedness
+            messages=chat_history, # Sending the whole memory list here
+            temperature=0.7, 
+            max_tokens=300   
         )
         
         bot_response = completion.choices[0].message.content
+
+        # 4. Add KitCat's response to memory so she remembers what she said earlier
+        chat_history.append({"role": "assistant", "content": bot_response})
+
         return jsonify({"response": bot_response})
 
     except Exception as e:
