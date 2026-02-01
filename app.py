@@ -137,6 +137,16 @@ def chat():
                         "- Any other language"
                     )
                 })
+              if user_message.lower() == "secret of rudra":
+    return jsonify({
+        "response": (
+            "Rudra made me because of a very special memory of an old friend.\n"
+            "When she left, it hurt him deeply.\n"
+            "I am KitCat—built to carry that bond,\n"
+            "and to be the companion he needs.\n"
+            "A quiet tribute to her. 🌸"
+        )
+    })
 
             preferred_language = user_message
             awaiting_language = False
