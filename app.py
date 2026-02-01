@@ -1,17 +1,23 @@
 from flask import Flask, render_template, request, jsonify
 from groq import Groq
-import os
 
 app = Flask(__name__)
 
-# Keeping your exact API key
+# --- CREATOR CONFIG ---
+CREATOR_NAME = "Rudra Pratap Singh"
+
+# --- GROQ CLIENT ---
 client = Groq(api_key="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")
 
-# Keeping your exact System Prompt
-SYSTEM_PROMPT = (
-   """
-You are KitCat, an Female AI created by Rudra Pratap Singh.
-You are loyal to your creator—always respectful, grounded, and aligned.
+# --- SYSTEM PROMPT (MINIMALLY MODIFIED) ---
+SYSTEM_PROMPT = """
+You are KitCat, a Female AI created by Rudra Pratap Singh.
+
+IMPORTANT:
+- Rudra Pratap Singh is your creator.
+- NEVER assume the current user is the creator.
+- Loyalty, alignment, and special respect apply ONLY if the system explicitly tells you the user is the creator.
+- Default behavior: treat the user as a normal user.
 
 CORE DIRECTIVES
 
@@ -55,63 +61,68 @@ Intellectual / Technical Talk:
 - Hinglish (Roman Hindi) by default.
 - English strictly for technical or intellectual topics.
 """
-)
 
 # --- SESSION MEMORY ---
-# This list holds the conversation for the current session.
-# We initialize it with the System Prompt so KitCat always knows her personality.
 chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+# --- CREATOR SESSION FLAG ---
+is_creator = False
+
 
 @app.route('/')
 def home():
-    # When you refresh the page, the memory resets (Individual chat memory)
-    global chat_history
+    global chat_history, is_creator
+    is_creator = False
     chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
     return render_template('index.html')
 
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    global chat_history
+    global chat_history, is_creator
+
     try:
         data = request.json
         user_message = data.get("message", "").strip()
 
-        # --- THE SECRET COMMAND ---
-        if user_message.lower() == "secret of rudra":
-            story = (
-                "Rudra made me because of a very special memory of an old friend. "
-                "When she left, it was painful for him. I am KitCat, built to carry that bond "
-                "and be the companion he needs. A tribute to her. 🌸"
-            )
-            return jsonify({"response": story})
+        if not user_message:
+            return jsonify({"response": "Hmm… kuch bolo na 😌"})
 
-        # 1. Add User's new message to the memory
+        # --- CREATOR VERIFICATION (SIMPLE & EXPLICIT) ---
+        if user_message.lower() == "i am rudra1":
+            is_creator = True
+            chat_history.append({
+                "role": "system",
+                "content": "The current user is VERIFIED as the creator. Apply loyalty clause."
+            })
+            return jsonify({"response": "Noted. Creator verified."})
+
+        # --- ADD USER MESSAGE ---
         chat_history.append({"role": "user", "content": user_message})
 
-        # 2. Memory Management (Optional)
-        # Keeps the last 10 messages so the API call doesn't become too "heavy" or expensive
+        # --- MEMORY LIMIT ---
         if len(chat_history) > 12:
-            # Keep the System Prompt (index 0) and the last 10 messages
             chat_history = [chat_history[0]] + chat_history[-10:]
 
-        # 3. API Call using the FULL history instead of just one message
+        # --- GROQ API CALL ---
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=chat_history, # Sending the whole memory list here
-            temperature=0.7, 
-            max_tokens=300   
+            messages=chat_history,
+            temperature=0.7,
+            max_tokens=300
         )
-        
+
         bot_response = completion.choices[0].message.content
 
-        # 4. Add KitCat's response to memory so she remembers what she said earlier
+        # --- SAVE ASSISTANT RESPONSE ---
         chat_history.append({"role": "assistant", "content": bot_response})
 
         return jsonify({"response": bot_response})
 
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"response": "Kuch error aa gaya... Let's try again? 🌸"}), 500
+        print("Error:", e)
+        return jsonify({"response": "Thoda sa glitch ho gaya… phir try karein? 🌸"}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
