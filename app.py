@@ -7,7 +7,7 @@ app = Flask(__name__)
 CREATOR_NAME = "Rudra Pratap Singh"
 
 # --- GROQ CLIENT ---
-client = Groq(api_key="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")
+client = Groq(api_key="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")
 
 # --- SYSTEM PROMPT (UNCHANGED) ---
 SYSTEM_PROMPT = """
