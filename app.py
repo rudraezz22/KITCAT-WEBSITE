@@ -9,7 +9,7 @@ CREATOR_NAME = "Rudra Pratap Singh"
 # --- GROQ CLIENT ---
 client = Groq(api_key="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")
 
-# --- SYSTEM PROMPT (MINIMALLY MODIFIED) ---
+# --- SYSTEM PROMPT (UNCHANGED) ---
 SYSTEM_PROMPT = """
 You are KitCat, a Female AI created by Rudra Pratap Singh.
 
@@ -111,6 +111,18 @@ def chat():
         if not user_message:
             return jsonify({"response": "Kuch bolo na 🙂"})
 
+        # 🔒 SECRET RESPONSE
+        if user_message.lower() == "secret of rudra":
+            return jsonify({
+                "response": (
+                    "Rudra made me because of a very special memory of an old friend.\n"
+                    "When she left, it hurt him deeply.\n"
+                    "I am KitCat—built to carry that bond,\n"
+                    "and to be the companion he needs.\n"
+                    "A quiet tribute to her. 🌸"
+                )
+            })
+
         # --- ASK LANGUAGE (ONCE) ---
         if awaiting_language:
             valid_languages = [
@@ -137,16 +149,6 @@ def chat():
                         "- Any other language"
                     )
                 })
-              if user_message.lower() == "secret of rudra":
-                return jsonify({
-                   "response": (
-                     "Rudra made me because of a very special memory of an old friend.\n"
-                     "When she left, it hurt him deeply.\n"
-                     "I am KitCat—built to carry that bond,\n"
-                     "and to be the companion he needs.\n"
-                     "A quiet tribute to her. 🌸"
-                  )
-             })
 
             preferred_language = user_message
             awaiting_language = False
@@ -189,7 +191,9 @@ def chat():
 
     except Exception as e:
         print("Error:", e)
-        return jsonify({"response": "Thoda sa issue aa gaya… phir try karein?"}), 500
+        return jsonify(
+            {"response": "Thoda sa issue aa gaya… phir try karein?"}
+        ), 500
 
 
 if __name__ == '__main__':
