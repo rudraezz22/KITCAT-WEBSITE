@@ -8,26 +8,90 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #0f172a; }
+
+        /* --- THEME ENGINE --- */
+        :root {
+            --bg-from: #0f172a;
+            --bg-via: #581c87;
+            --bg-to: #0f172a;
+            --accent: #22d3ee;
+        }
+
+        [data-theme="cyber"] {
+            --bg-from: #000000;
+            --bg-via: #09312f;
+            --bg-to: #000000;
+            --accent: #00ffcc;
+        }
+
+        [data-theme="rose"] {
+            --bg-from: #1e0a0a;
+            --bg-via: #881337;
+            --bg-to: #1e0a0a;
+            --accent: #fb7185;
+        }
+
+        [data-theme="dark"] {
+            --bg-from: #020617;
+            --bg-via: #1e293b;
+            --bg-to: #020617;
+            --accent: #94a3b8;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(to bottom right, var(--bg-from), var(--bg-via), var(--bg-to));
+            transition: background 0.8s ease;
+            min-height: 100vh;
+        }
+
         .scrollbar-custom::-webkit-scrollbar { width: 4px; }
         .scrollbar-custom::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.2); border-radius: 10px; }
+        
         .scanline {
             width: 100%; height: 2px; background: rgba(34, 211, 238, 0.1);
             position: absolute; top: 0; z-index: 5; animation: scan 6s linear infinite;
         }
         @keyframes scan { from { top: 0; } to { top: 100%; } }
+        
         .user-msg {
             background: rgba(168, 85, 247, 0.15);
             border: 1px solid rgba(168, 85, 247, 0.3);
         }
     </style>
 </head>
-<body class="text-slate-200 overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+
+<body class="text-slate-200 overflow-hidden">
+
+    <div id="theme-panel" class="hidden fixed top-20 left-20 z-50 bg-slate-900/90 border border-white/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl flex flex-col gap-2">
+        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2 px-4">System Core</p>
+        <button onclick="setTheme('default')" class="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-lg transition text-cyan-400 text-sm">
+            <span class="w-3 h-3 rounded-full bg-purple-600"></span> Default
+        </button>
+        <button onclick="setTheme('cyber')" class="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-lg transition text-emerald-400 text-sm">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Cyberpunk
+        </button>
+        <button onclick="setTheme('rose')" class="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-lg transition text-rose-400 text-sm">
+            <span class="w-3 h-3 rounded-full bg-rose-600"></span> Rose Wine
+        </button>
+        <button onclick="setTheme('dark')" class="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-lg transition text-slate-400 text-sm">
+            <span class="w-3 h-3 rounded-full bg-slate-700"></span> Deep Void
+        </button>
+    </div>
+
     <div class="flex h-screen">
         <div class="w-16 border-r border-white/10 flex flex-col items-center py-6 gap-6 bg-black/20 backdrop-blur-md">
-            <div class="w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/50"><i data-lucide="sparkles" class="text-white w-5"></i></div>
+            <div class="w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/50">
+                <i data-lucide="sparkles" class="text-white w-5"></i>
+            </div>
+            
             <i data-lucide="brain" class="text-slate-500 hover:text-cyan-400 cursor-pointer"></i>
             <i data-lucide="heart" class="text-slate-500 hover:text-pink-400 cursor-pointer"></i>
+            
+            <button onclick="toggleThemePanel()" data-theme-toggle class="mt-auto mb-4 group">
+                <i data-lucide="palette" class="text-slate-500 group-hover:text-cyan-400 transition"></i>
+                <span class="block text-[8px] text-slate-500 mt-1 uppercase">Themes</span>
+            </button>
         </div>
 
         <div class="flex-1 flex flex-col p-6 max-w-3xl mx-auto">
@@ -54,111 +118,131 @@
         </div>
 
         <div class="hidden lg:flex flex-1 items-center justify-center p-12">
-            <div class="relative w-full aspect-square max-w-md border border-cyan-500/20 rounded-3xl bg-black/20 backdrop-blur-2xl flex items-center justify-center shadow-2xl overflow-hidden">
-                <div class="scanline"></div>
-                <img src="{{ url_for('static', filename='kitcatimg.png') }}" class="w-full h-full object-cover"
->
-                <div class="absolute bottom-6 right-6 flex items-center gap-2 bg-slate-900/80 border border-cyan-500/30 px-3 py-1 rounded-full text-[10px] tracking-widest text-cyan-400 font-bold">
-                    <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></span> SYSTEM ACTIVE
-                </div>
-            </div>
+    <div class="relative w-full aspect-square max-w-md border border-cyan-500/20 rounded-3xl bg-black/20 backdrop-blur-2xl flex items-center justify-center shadow-2xl overflow-hidden">
+        <div class="scanline"></div>
+        
+        <img src="kitcatimg.png" 
+             onerror="this.onerror=null; this.src='https://placehold.co/600x600/0f172a/22d3ee?text=KitCat+Active';" 
+             class="w-full h-full object-cover">
+
+        <div class="absolute bottom-6 right-6 flex items-center gap-2 bg-slate-900/80 border border-cyan-500/30 px-3 py-1 rounded-full text-[10px] tracking-widest text-cyan-400 font-bold">
+            <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></span> SYSTEM ACTIVE
         </div>
     </div>
+</div>
 
     <script>
-        // Initialize Lucide icons
-lucide.createIcons();
+        /* ================= ICON INIT ================= */
+        lucide.createIcons();
 
-const input = document.getElementById('user-input');
-const container = document.getElementById('chat-container');
+        /* ================= DOM ELEMENTS ================= */
+        const input = document.getElementById('user-input');
+        const container = document.getElementById('chat-container');
 
-/**
- * Adds a message bubble to the chat container
- * @param {string} text - The message content
- * @param {boolean} isUser - True if sender is user, false for KitCat
- */
-function appendMessage(text, isUser) {
-    const msgDiv = document.createElement('div');
-    
-    if (isUser) {
-        msgDiv.className = "user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium shadow-sm";
-    } else {
-        msgDiv.className = "bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300 shadow-sm";
-    }
-    
-    msgDiv.innerText = text;
-    container.appendChild(msgDiv);
-    
-    // Auto-scroll to the bottom smoothly
-    container.scrollTo({
-        top: container.scrollHeight,
-        behavior: 'smooth'
-    });
-}
+        /* ================= THEME SYSTEM ================= */
 
-/**
- * Handles the main chat logic: UI updates -> API Call -> Response
- */
-async function sendMessage() {
-    const text = input.value.trim();
-    if (!text) return;
-
-    // 1. Add User Message to UI
-    appendMessage(text, true);
-    input.value = ''; // Clear input
-
-    // 2. Add Typing Indicator
-    const typingId = "typing-" + Date.now();
-    const typingDiv = document.createElement('div');
-    typingDiv.id = typingId;
-    typingDiv.className = "bg-slate-800/20 p-3 rounded-xl self-start text-cyan-400/80 text-xs animate-pulse italic";
-    typingDiv.innerText = "KitCat is typing...";
-    container.appendChild(typingDiv);
-    container.scrollTop = container.scrollHeight;
-
-    try {
-        const typingDelay = new Promise(resolve => setTimeout(resolve, 1500));
-        // 3. API Call to Flask/Render
-        const res = await fetch('/api/chat', { 
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ message: text })
-        });
-
-        if (!res.ok) throw new Error("Network response was not ok");
-        
-        const data = await res.json();
-        
-        // 4. Remove Typing Indicator
-        const indicator = document.getElementById(typingId);
-        if (indicator) indicator.remove();
-
-        // 5. Special "Secret of Rudra" Trigger Effect
-        if (text.toLowerCase() === "secret of rudra") {
-            document.body.style.transition = "background 3s ease";
-            document.body.style.background = "#1a0b2e"; // Deep emotional purple
+        function setTheme(theme) {
+            if (theme === 'default') {
+                document.body.removeAttribute("data-theme");
+                localStorage.removeItem("kitcat-theme");
+            } else {
+                document.body.setAttribute("data-theme", theme);
+                localStorage.setItem("kitcat-theme", theme);
+            }
+            // Close panel after selection
+            document.getElementById("theme-panel").classList.add("hidden");
         }
 
-        // 6. Display KitCat's Response
-        appendMessage(data.response, false);
+        /* Load saved theme on page load */
+        const savedTheme = localStorage.getItem("kitcat-theme");
+        if (savedTheme) {
+            setTheme(savedTheme);
+        }
 
-    } catch (e) {
-        // Handle Errors
-        console.error("Fetch Error:", e);
-        const indicator = document.getElementById(typingId);
-        if (indicator) indicator.remove();
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.className = "text-red-400 text-[10px] text-center uppercase tracking-widest mt-2";
-        errorDiv.innerText = "KitCat had a glitch... try again 💫";
-        container.appendChild(errorDiv);
-    }
-}
+        /* Theme panel toggle */
+        function toggleThemePanel() {
+            const panel = document.getElementById("theme-panel");
+            panel.classList.toggle("hidden");
+        }
 
-// Allow sending with 'Enter' key
-input.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") sendMessage();
-});
+        /* Close theme panel when clicking outside */
+        document.addEventListener("click", (e) => {
+            const panel = document.getElementById("theme-panel");
+            const toggleBtn = document.querySelector("[data-theme-toggle]");
+            
+            if (!panel.classList.contains("hidden")) {
+                if (!panel.contains(e.target) && !toggleBtn.contains(e.target)) {
+                    panel.classList.add("hidden");
+                }
+            }
+        });
+
+        /* ================= CHAT UI ================= */
+
+        function appendMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            if (isUser) {
+                msgDiv.className = "user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium shadow-sm";
+            } else {
+                msgDiv.className = "bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300 shadow-sm";
+            }
+            msgDiv.innerText = text;
+            container.appendChild(msgDiv);
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        }
+
+        /* ================= MAIN CHAT LOGIC ================= */
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage(text, true);
+            input.value = '';
+
+            const typingId = "typing-" + Date.now();
+            const typingDiv = document.createElement('div');
+            typingDiv.id = typingId;
+            typingDiv.className = "bg-slate-800/20 p-3 rounded-xl self-start text-cyan-400/80 text-xs animate-pulse italic";
+            typingDiv.innerText = "KitCat is typing...";
+            container.appendChild(typingDiv);
+            container.scrollTop = container.scrollHeight;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text })
+                });
+
+                const indicator = document.getElementById(typingId);
+                if (indicator) indicator.remove();
+
+                if (!res.ok) throw new Error("API Error");
+
+                const data = await res.json();
+                appendMessage(data.response, false);
+
+                // Auto-theme based on keywords
+                const lower = text.toLowerCase();
+                if (lower.includes("cyber")) setTheme("cyber");
+                if (lower.includes("rose")) setTheme("rose");
+                if (lower.includes("dark")) setTheme("dark");
+
+            } catch (e) {
+                const indicator = document.getElementById(typingId);
+                if (indicator) indicator.remove();
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = "text-red-400 text-[10px] text-center uppercase tracking-widest mt-2";
+                errorDiv.innerText = "KitCat had a glitch... try again 💫";
+                container.appendChild(errorDiv);
+            }
+        }
+
+        input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
     </script>
 </body>
 </html>
