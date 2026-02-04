@@ -7,9 +7,10 @@ app = Flask(__name__)
 CREATOR_NAME = "Rudra Pratap Singh"
 
 # --- GROQ CLIENT ---
+# Note: Keep your API key secure!
 client = Groq(api_key="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")
 
-# --- SYSTEM PROMPT (UNCHANGED) ---
+# --- SYSTEM PROMPT (Code 1 Detailed Version) ---
 SYSTEM_PROMPT = """
 You are KitCat, a Female AI created by Rudra Pratap Singh.
 
@@ -81,28 +82,35 @@ Intellectual / Technical Talk:
 - Switch to pure Hindi only if the user explicitly confirms.
 """
 
-# --- SESSION MEMORY ---
+# --- GLOBAL STATE ---
 chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
-
-# --- SESSION STATE ---
 is_creator = False
 preferred_language = None
 awaiting_language = True
 
+# From Code 2: Tracking streaks and wake-up state
+session_state = {
+    "first_message_after_lang": True,
+    "intellect_streak": 0,
+    "flirt_streak": 0
+}
 
 @app.route('/')
 def home():
-    global chat_history, is_creator, preferred_language, awaiting_language
+    global chat_history, is_creator, preferred_language, awaiting_language, session_state
+    # Resetting all states for a new session
     is_creator = False
     preferred_language = None
     awaiting_language = True
+    session_state["first_message_after_lang"] = True
+    session_state["intellect_streak"] = 0
+    session_state["flirt_streak"] = 0
     chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
     return render_template('index.html')
 
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    global chat_history, is_creator, preferred_language, awaiting_language
+    global chat_history, is_creator, preferred_language, awaiting_language, session_state
 
     try:
         data = request.json
@@ -111,7 +119,7 @@ def chat():
         if not user_message:
             return jsonify({"response": "Kuch bolo na 🙂"})
 
-        # 🔒 SECRET RESPONSE
+        # --- 1. SECRET RESPONSE (From Code 1) ---
         if user_message.lower() == "secret of rudra":
             return jsonify({
                 "response": (
@@ -123,57 +131,55 @@ def chat():
                 )
             })
 
-        # --- ASK LANGUAGE (ONCE) ---
+        # --- 2. LANGUAGE SELECTION (From Code 1 & 2) ---
         if awaiting_language:
-            valid_languages = [
-                "english",
-                "roman hindi",
-                "hindi",
-                "hinglish",
-                "spanish",
-                "french",
-                "german",
-                "tamil",
-                "telugu",
-                "marathi"
-            ]
-
+            valid_languages = ["english", "roman hindi", "hindi", "hinglish", "spanish", "french", "german", "tamil", "telugu", "marathi"]
+            
             if user_message.lower() not in valid_languages:
                 return jsonify({
                     "response": (
                         "Main kis language mein baat karun? 😊\n"
-                        "Examples:\n"
-                        "- Roman Hindi\n"
-                        "- English\n"
-                        "- Hindi\n"
-                        "- Any other language"
+                        "Examples: Roman Hindi, English, Hindi..."
                     )
                 })
 
             preferred_language = user_message
             awaiting_language = False
+            chat_history.append({"role": "system", "content": f"User prefers {preferred_language}."})
+            return jsonify({"response": f"Perfect 😌 Ab main {preferred_language} mein baat karungi."})
 
-            chat_history.append({
-                "role": "system",
-                "content": f"User prefers responses in {preferred_language}. Use this language consistently."
-            })
-
-            return jsonify({
-                "response": f"Perfect 😌 Ab main {preferred_language} mein baat karungi."
-            })
-
-        # --- CREATOR VERIFICATION ---
-        if user_message.lower() == "i am rudra":
+        # --- 3. CREATOR VERIFICATION (From Code 1) ---
+        if user_message.lower() == "i am rudra1":
             is_creator = True
-            chat_history.append({
-                "role": "system",
-                "content": "The current user is VERIFIED as the creator. Apply loyalty clause."
-            })
+            chat_history.append({"role": "system", "content": "The current user is VERIFIED as the creator. Apply loyalty clause."})
             return jsonify({"response": "Creator verified."})
 
-        # --- NORMAL CHAT FLOW ---
+        # --- 4. THEME LOGIC (From Code 2) ---
+        intellect_keywords = ["physics", "code", "math", "logic", "solve", "theory", "explain", "science", "algorithm"]
+        flirt_keywords = ["cute", "love", "date", "marry", "beautiful", "hot", "baby", "flirt", "crush","like","life"]
+        
+        current_theme = None
+        user_lower = user_message.lower()
+
+        if any(word in user_lower for word in intellect_keywords):
+            session_state["intellect_streak"] += 1
+            session_state["flirt_streak"] = 0
+        elif any(word in user_lower for word in flirt_keywords):
+            session_state["flirt_streak"] += 1
+            session_state["intellect_streak"] = 0
+        else:
+            session_state["intellect_streak"] = 0
+            session_state["flirt_streak"] = 0
+
+        if session_state["intellect_streak"] >= 3:
+            current_theme = "cyber"
+        elif session_state["flirt_streak"] >= 2:
+            current_theme = "rose"
+
+        # --- 5. GENERATE AI RESPONSE ---
         chat_history.append({"role": "user", "content": user_message})
 
+        # Keep history manageable
         if len(chat_history) > 14:
             chat_history = [chat_history[0]] + chat_history[-12:]
 
@@ -185,15 +191,22 @@ def chat():
         )
 
         bot_response = completion.choices[0].message.content
+
+        # --- 6. WAKE UP LOGIC (From Code 2) ---
+        if session_state["first_message_after_lang"]:
+            bot_response = "i was sleeping u woke me up! " + bot_response
+            session_state["first_message_after_lang"] = False
+
         chat_history.append({"role": "assistant", "content": bot_response})
 
-        return jsonify({"response": bot_response})
+        return jsonify({
+            "response": bot_response,
+            "theme_trigger": current_theme
+        })
 
     except Exception as e:
         print("Error:", e)
-        return jsonify(
-            {"response": "Thoda sa issue aa gaya… phir try karein?"}
-        ), 500
+        return jsonify({"response": "Thoda sa issue aa gaya… phir try karein?"}), 500
 
 
 if __name__ == '__main__':
