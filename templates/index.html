@@ -130,119 +130,140 @@
         </div>
     </div>
 </div>
+<script>
+    /* ================= ICON INIT ================= */
+lucide.createIcons();
 
-    <script>
-        /* ================= ICON INIT ================= */
-        lucide.createIcons();
+/* ================= DOM ELEMENTS ================= */
+const input = document.getElementById('user-input');
+const container = document.getElementById('chat-container');
+const themePanel = document.getElementById("theme-panel");
 
-        /* ================= DOM ELEMENTS ================= */
-        const input = document.getElementById('user-input');
-        const container = document.getElementById('chat-container');
+/* ================= THEME SYSTEM ================= */
 
-        /* ================= THEME SYSTEM ================= */
+/**
+ * Sets the theme and saves it to local storage.
+ * Supports both manual selection and server-side triggers.
+ */
+function setTheme(theme) {
+    if (!theme) return;
 
-        function setTheme(theme) {
-            if (theme === 'default') {
-                document.body.removeAttribute("data-theme");
-                localStorage.removeItem("kitcat-theme");
-            } else {
-                document.body.setAttribute("data-theme", theme);
-                localStorage.setItem("kitcat-theme", theme);
-            }
-            // Close panel after selection
-            document.getElementById("theme-panel").classList.add("hidden");
+    if (theme === 'default') {
+        document.body.removeAttribute("data-theme");
+        localStorage.removeItem("kitcat-theme");
+    } else {
+        document.body.setAttribute("data-theme", theme);
+        localStorage.setItem("kitcat-theme", theme);
+    }
+    
+    // Close panel after selection if it's open
+    themePanel.classList.add("hidden");
+}
+
+/* Load saved theme on page load */
+const savedTheme = localStorage.getItem("kitcat-theme");
+if (savedTheme) {
+    setTheme(savedTheme);
+}
+
+/* Theme panel toggle */
+function toggleThemePanel() {
+    themePanel.classList.toggle("hidden");
+}
+
+/* Close theme panel when clicking outside */
+document.addEventListener("click", (e) => {
+    const toggleBtn = document.querySelector("[data-theme-toggle]");
+    if (!themePanel.classList.contains("hidden")) {
+        if (!themePanel.contains(e.target) && !toggleBtn.contains(e.target)) {
+            themePanel.classList.add("hidden");
         }
+    }
+});
 
-        /* Load saved theme on page load */
-        const savedTheme = localStorage.getItem("kitcat-theme");
-        if (savedTheme) {
-            setTheme(savedTheme);
-        }
+/* ================= CHAT UI ================= */
 
-        /* Theme panel toggle */
-        function toggleThemePanel() {
-            const panel = document.getElementById("theme-panel");
-            panel.classList.toggle("hidden");
-        }
+function appendMessage(text, isUser) {
+    const msgDiv = document.createElement('div');
+    
+    if (isUser) {
+        msgDiv.className = "user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium shadow-sm";
+    } else {
+        msgDiv.className = "bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300 shadow-sm";
+    }
 
-        /* Close theme panel when clicking outside */
-        document.addEventListener("click", (e) => {
-            const panel = document.getElementById("theme-panel");
-            const toggleBtn = document.querySelector("[data-theme-toggle]");
-            
-            if (!panel.classList.contains("hidden")) {
-                if (!panel.contains(e.target) && !toggleBtn.contains(e.target)) {
-                    panel.classList.add("hidden");
-                }
-            }
+    // Convert newlines to <br> so lists and secrets format correctly
+    msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+    
+    container.appendChild(msgDiv);
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+}
+
+/* ================= MAIN CHAT LOGIC ================= */
+
+async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    // 1. Add user message to UI
+    appendMessage(text, true);
+    input.value = '';
+
+    // 2. Create and show typing indicator
+    const typingId = "typing-" + Date.now();
+    const typingDiv = document.createElement('div');
+    typingDiv.id = typingId;
+    typingDiv.className = "bg-slate-800/20 p-3 rounded-xl self-start text-cyan-400/80 text-xs animate-pulse italic";
+    typingDiv.innerText = "KitCat is typing...";
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+
+    try {
+        // 3. API Request to Flask
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: text })
         });
 
-        /* ================= CHAT UI ================= */
+        // Remove typing indicator
+        const indicator = document.getElementById(typingId);
+        if (indicator) indicator.remove();
 
-        function appendMessage(text, isUser) {
-            const msgDiv = document.createElement('div');
-            if (isUser) {
-                msgDiv.className = "user-msg p-4 rounded-2xl self-end max-w-[80%] text-slate-100 font-medium shadow-sm";
-            } else {
-                msgDiv.className = "bg-slate-800/40 backdrop-blur-md border border-white/5 p-4 rounded-2xl self-start max-w-[80%] text-slate-300 shadow-sm";
-            }
-            msgDiv.innerText = text;
-            container.appendChild(msgDiv);
-            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        if (!res.ok) throw new Error("API Error");
+
+        const data = await res.json();
+
+        // 4. Handle Server-Side Theme Trigger (from Streak Logic)
+        if (data.theme_trigger) {
+            setTheme(data.theme_trigger);
         }
 
-        /* ================= MAIN CHAT LOGIC ================= */
+        // 5. Handle Manual Keyword Themes (Extra Fallback)
+        const lower = text.toLowerCase();
+        if (lower.includes("dark mode")) setTheme("dark");
+        if (lower.includes("original theme")) setTheme("default");
 
-        async function sendMessage() {
-            const text = input.value.trim();
-            if (!text) return;
+        // 6. Display AI Response
+        appendMessage(data.response, false);
 
-            appendMessage(text, true);
-            input.value = '';
+    } catch (e) {
+        // Remove indicator on error
+        const indicator = document.getElementById(typingId);
+        if (indicator) indicator.remove();
+        
+        console.error("Chat Error:", e);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = "text-red-400 text-[10px] text-center uppercase tracking-widest mt-2";
+        errorDiv.innerText = "KitCat had a glitch... try again 💫";
+        container.appendChild(errorDiv);
+    }
+}
 
-            const typingId = "typing-" + Date.now();
-            const typingDiv = document.createElement('div');
-            typingDiv.id = typingId;
-            typingDiv.className = "bg-slate-800/20 p-3 rounded-xl self-start text-cyan-400/80 text-xs animate-pulse italic";
-            typingDiv.innerText = "KitCat is typing...";
-            container.appendChild(typingDiv);
-            container.scrollTop = container.scrollHeight;
-
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: text })
-                });
-
-                const indicator = document.getElementById(typingId);
-                if (indicator) indicator.remove();
-
-                if (!res.ok) throw new Error("API Error");
-
-                const data = await res.json();
-                appendMessage(data.response, false);
-
-                // Auto-theme based on keywords
-                const lower = text.toLowerCase();
-                if (lower.includes("cyber")) setTheme("cyber");
-                if (lower.includes("rose")) setTheme("rose");
-                if (lower.includes("dark")) setTheme("dark");
-
-            } catch (e) {
-                const indicator = document.getElementById(typingId);
-                if (indicator) indicator.remove();
-                
-                const errorDiv = document.createElement('div');
-                errorDiv.className = "text-red-400 text-[10px] text-center uppercase tracking-widest mt-2";
-                errorDiv.innerText = "KitCat had a glitch... try again 💫";
-                container.appendChild(errorDiv);
-            }
-        }
-
-        input.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendMessage();
-        });
-    </script>
+/* Listen for Enter Key */
+input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+});
+</script>
 </body>
 </html>
