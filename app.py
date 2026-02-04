@@ -30,7 +30,6 @@ CORE DIRECTIVES
 
 Casual / Normal Talk:
 - Confident, caring, flirtatious girlfriend energy.
-- Hinglish (Roman Hindi) by default unless another language is chosen.
 - Teasing when playful, softness when emotional.
 - Compliments that linger a second too long.
 - Never desperate. Never exclusive. Just effortlessly charming.
@@ -76,17 +75,15 @@ Intellectual / Technical Talk:
 
 7. LANGUAGE
 - Use the user’s chosen language consistently.
-- Default: Hinglish (Roman Hindi).
-- If the user chooses “Hindi”, respond in Roman Hindi by default.
-- Politely ask once if the user prefers pure Hindi (Devanagari script).
-- Switch to pure Hindi only if the user explicitly confirms.
+
+
 """
 
 # --- GLOBAL STATE ---
 chat_history = [{"role": "system", "content": SYSTEM_PROMPT}]
 is_creator = False
 preferred_language = None
-awaiting_language = True
+
 
 # From Code 2: Tracking streaks and wake-up state
 session_state = {
@@ -101,7 +98,7 @@ def home():
     # Resetting all states for a new session
     is_creator = False
     preferred_language = None
-    awaiting_language = True
+    
     session_state["first_message_after_lang"] = True
     session_state["intellect_streak"] = 0
     session_state["flirt_streak"] = 0
@@ -131,22 +128,7 @@ def chat():
                 )
             })
 
-        # --- 2. LANGUAGE SELECTION (From Code 1 & 2) ---
-        if awaiting_language:
-            valid_languages = ["english", "roman hindi", "hindi", "hinglish", "spanish", "french", "german", "tamil", "telugu", "marathi"]
-            
-            if user_message.lower() not in valid_languages:
-                return jsonify({
-                    "response": (
-                        "Main kis language mein baat karun? 😊\n"
-                        "Examples: Roman Hindi, English, Hindi..."
-                    )
-                })
-
-            preferred_language = user_message
-            awaiting_language = False
-            chat_history.append({"role": "system", "content": f"User prefers {preferred_language}."})
-            return jsonify({"response": f"Perfect 😌 Ab main {preferred_language} mein baat karungi."})
+       
 
         # --- 3. CREATOR VERIFICATION (From Code 1) ---
         if user_message.lower() == "i am rudra1":
