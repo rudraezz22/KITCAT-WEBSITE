@@ -8,7 +8,7 @@ CREATOR_NAME = "Rudra Pratap Singh"
 
 # --- GROQ CLIENT ---
 # Note: Keep your API key secure!
-client = Groq(api_key="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")
+client = Groq(api_key="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")
 
 # --- SYSTEM PROMPT (Code 1 Detailed Version) ---
 SYSTEM_PROMPT = """
