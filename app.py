@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from groq import Groq
+from dotenv import load_dotenv
+
 
 app = Flask(__name__)
 
@@ -8,7 +10,8 @@ CREATOR_NAME = "Rudra Pratap Singh"
 
 # --- GROQ CLIENT ---
 # Note: Keep your API key secure!
-client = Groq(api_key="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")
+load_dotenv("key.env")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # --- SYSTEM PROMPT (Code 1 Detailed Version) ---
 SYSTEM_PROMPT = """
